@@ -12,7 +12,7 @@ A detection engineering and incident response lab built in Microsoft Sentinel. T
 | **IR Framework** | NIST 800-61 |
 | **Tactic** | Credential Access |
 | **MITRE Technique** | T1110 Brute Force |
-| **Outcome** | True positive. Brute force confirmed from 8 external IPs, no successful logons, contained via NSG lockdown |
+| **Outcome** | True positive. Brute force confirmed from external IPs, no successful logons, contained via NSG lockdown |
 
 ## Contents
 
@@ -45,18 +45,25 @@ DeviceLogonEvents
 | where NumberOfFailures >= 10
 ```
 
+![Creating the scheduled analytics rule with its MITRE ATT&CK mapping](screenshots/01-analytics-rule-creation.png)
+
 **Rule configuration:**
 
 | Setting | Value |
 |---------|-------|
 | Status | Enabled |
+| Severity | Medium |
 | Run frequency | Every 4 hours |
 | Lookback window | Last 5 hours |
 | Entity mappings | RemoteIP, DeviceName |
 | Incident creation | Automatic |
 | Alert grouping | Single incident per 24 hours |
 | Stop query after alert | Yes |
-| MITRE mapping | T1110 Brute Force |
+| MITRE mapping | Credential Access, T1110 Brute Force (and sub-technique) |
+
+Once created, the rule shows as enabled in the active rules list:
+
+![The detection rule enabled in the Sentinel active rules list](screenshots/02-rule-enabled.png)
 
 ## Part 2: Detection Results
 
@@ -64,8 +71,8 @@ The environment already contained enough real brute force activity to satisfy th
 
 **Scope of the activity:**
 
-- 8 distinct external source IPs
-- 7 targeted hosts across the shared environment (shown as `HOST-01` through `HOST-07`)
+- Multiple distinct external source IPs
+- Several targeted hosts across the shared environment (shown as `HOST-01` through `HOST-07`)
 
 **Source IPs observed:**
 
@@ -88,7 +95,9 @@ Roles, procedures, and tooling were in place ahead of the investigation: Microso
 
 ### Detection and Analysis
 
-The analytics rule surfaced the activity, and the entity mappings showed the full picture: 8 external IPs generating repeated failed logons against 7 hosts. The pattern of high-volume failures from single sources against the same hosts confirmed genuine brute force behavior rather than noise.
+The analytics rule auto-created an incident, which was assigned and set to Active for investigation. The entity mappings laid out the full picture: multiple external IPs generating repeated failed logons against multiple hosts. The pattern of high-volume failures from single sources against the same hosts confirmed genuine brute force behavior rather than noise.
+
+![Incident investigation graph showing the source IPs and targeted hosts](screenshots/03-incident-entities.png)
 
 **Success check.** The key question was whether any of the suspect IPs actually authenticated. This query checks every suspect IP for any logon that was not a failure:
 
@@ -122,13 +131,16 @@ A policy recommendation was proposed to require restricted NSG access on all vir
 
 ### Closure
 
-The incident was assessed as a true positive. The rule fired on genuine brute force activity, and the investigation confirmed the attempts were unsuccessful with no compromise. With containment and remediation complete, the case was closed out.
+The incident was closed as a **True Positive**, with the note that a brute force attempt occurred but was verified to have produced no successful logins. The rule fired on genuine brute force activity, the investigation confirmed no compromise, and with containment and remediation complete the case was closed out.
+
+![Closing the incident as a True Positive](screenshots/04-incident-closure.png)
 
 ## MITRE ATT&CK Mapping
 
 | Tactic | Technique | ID | Evidence |
 |--------|-----------|----|----|
 | Credential Access | Brute Force | T1110 | Repeated failed logons from single IPs against the same hosts, crossing the alert threshold |
+| Credential Access | Brute Force: Password Guessing | T1110.001 | Repeated logon attempts consistent with credential guessing, mapped on the detection rule |
 | Initial Access | External Remote Services | T1133 | Attempts targeted publicly exposed VMs over RDP from the internet |
 
 ## Lessons Learned
@@ -152,6 +164,7 @@ The incident was assessed as a true positive. The rule fired on genuine brute fo
 - `README.md` - this writeup
 - `analytics-rule.kql` - the detection query behind the Sentinel rule
 - `success-check.kql` - the query used to confirm no successful brute force login
+- `screenshots/` - rule creation, incident investigation, and closure
 
 ---
 
