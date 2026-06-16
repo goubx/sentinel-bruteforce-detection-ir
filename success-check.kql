@@ -1,0 +1,18 @@
+// ============================================================
+// Successful Logon Check
+// Confirms whether any suspect brute force IP authenticated.
+// Any result that is not a failure is worth investigating.
+// ============================================================
+
+DeviceLogonEvents
+| where RemoteIP in (
+    "91.92.40.7",
+    "125.137.115.145",
+    "185.162.141.34",
+    "91.92.40.217",
+    "91.92.40.10",
+    "186.10.68.218",
+    "45.142.193.166",
+    "80.94.95.83"
+)
+| where ActionType != "LogonFailed"
