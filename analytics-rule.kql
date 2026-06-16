@@ -1,0 +1,12 @@
+// ============================================================
+// Brute Force Detection - Microsoft Sentinel Analytics Rule
+// Source: Microsoft Defender for Endpoint (DeviceLogonEvents)
+// Fires when the same remote IP fails to log into the same host
+// 10+ times within 5 hours.
+// ============================================================
+
+DeviceLogonEvents
+| where TimeGenerated >= ago(5h)
+| where ActionType == "LogonFailed"
+| summarize NumberOfFailures = count() by RemoteIP, ActionType, DeviceName
+| where NumberOfFailures >= 10
